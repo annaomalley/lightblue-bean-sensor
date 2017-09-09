@@ -12,6 +12,7 @@ import com.punchthrough.bean.sdk.message.DeviceInfo;
 import com.punchthrough.bean.sdk.message.Callback;
 import com.punchthrough.bean.sdk.message.BeanError;
 import com.punchthrough.bean.sdk.message.ScratchBank;
+import com.punchthrough.bean.sdk.message.Acceleration;
 
 
 import java.util.ArrayList;
@@ -111,6 +112,19 @@ public class MainActivity extends AppCompatActivity {
 
 // Assuming you are in an Activity, use 'this' for the context
         bean.connect(this, beanListener);
+
+
+
+        bean.readAcceleration(new Callback<Acceleration>() {
+            @Override
+            public void onResult(Acceleration result) {
+                Log.d("abcd", "result: "+result);
+                Log.d("abcd", "Acceleration on X-axis: "+result.x());
+                Log.d("abcd", "Acceleration on y-axis: "+result.y());
+                Log.d("abcd", "Acceleration on z-axis: "+result.z());
+            }
+        });
+
 
     }
 }
