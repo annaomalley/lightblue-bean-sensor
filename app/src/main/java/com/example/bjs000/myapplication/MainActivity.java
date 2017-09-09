@@ -9,6 +9,7 @@ import com.punchthrough.bean.sdk.BeanDiscoveryListener;
 import com.punchthrough.bean.sdk.BeanManager;
 import com.punchthrough.bean.sdk.BeanListener;
 import com.punchthrough.bean.sdk.message.DeviceInfo;
+import android.os.Handler;
 import com.punchthrough.bean.sdk.message.Callback;
 import com.punchthrough.bean.sdk.message.BeanError;
 import com.punchthrough.bean.sdk.message.ScratchBank;
@@ -21,12 +22,17 @@ import android.util.Log;
 
 public class MainActivity extends AppCompatActivity {
 
+    Bean theBigBean = null;
+    private int mInterval = 1000;
+    private Handler mHandler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         final List<Bean> beans = new ArrayList<>();
+
 
         BeanDiscoveryListener listener = new BeanDiscoveryListener() {
             @Override
@@ -50,21 +56,24 @@ public class MainActivity extends AppCompatActivity {
 
         BeanManager.getInstance().setScanTimeout(15);  // Timeout in seconds, optional, default is 30 seconds
         Log.d("default adapter",(BluetoothAdapter.getDefaultAdapter()).getName());
+        Log.d("about to listen","yes it is");
+
         BeanManager.getInstance().startDiscovery(listener);
+        Log.d("done listening","yes it is");
 
 
     }
 
     private void readDeviceInfo(List<Bean> beans) {
         // Assume we have a reference to the 'beans' ArrayList from above.
-        final Bean bean = beans.get(0);
+        theBigBean = beans.get(0);
 
         BeanListener beanListener = new BeanListener() {
 
             @Override
             public void onConnected() {
                 System.out.println("connected to Bean!");
-                bean.readDeviceInfo(new Callback<DeviceInfo>() {
+                theBigBean.readDeviceInfo(new Callback<DeviceInfo>() {
                     @Override
                     public void onResult(DeviceInfo deviceInfo) {
                         System.out.println(deviceInfo.hardwareVersion());
@@ -111,20 +120,39 @@ public class MainActivity extends AppCompatActivity {
         };
 
 // Assuming you are in an Activity, use 'this' for the context
-        bean.connect(this, beanListener);
+        theBigBean.connect(this, beanListener);
 
-
-
-        bean.readAcceleration(new Callback<Acceleration>() {
-            @Override
-            public void onResult(Acceleration result) {
-                Log.d("abcd", "result: "+result);
-                Log.d("abcd", "Acceleration on X-axis: "+result.x());
-                Log.d("abcd", "Acceleration on y-axis: "+result.y());
-                Log.d("abcd", "Acceleration on z-axis: "+result.z());
-            }
-        });
+        mHandler = new Handler();
+        mStatusChecker.run();
 
 
     }
+
+    private void getAcceleration(Bean bean) {
+        bean.readAcceleration(new Callback<Acceleration>() {
+            @Override
+            public void onResult(Acceleration result) {
+                Log.d("abcd", "result: " + result);
+                Log.d("abcd", "Acceleration on X-axis: " + result.x());
+                Log.d("abcd", "Acceleration on y-axis: " + result.y());
+                Log.d("abcd", "Acceleration on z-axis: " + result.z());
+
+            }
+        });
+    }
+
+    Runnable mStatusChecker = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                getAcceleration(theBigBean); //this function can change value of mInterval.
+            } finally {
+                // 100% guarantee that this always happens, even if
+                // your update method throws an exception
+                mHandler.postDelayed(mStatusChecker, mInterval);
+            }
+        }
+
+    };
+
 }
